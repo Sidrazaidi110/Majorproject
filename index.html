@@ -117,6 +117,38 @@
       // Reset Form
       ['voterName', 'voterId', 'aadhar', 'candidate'].forEach(id => document.getElementById(id).value = "");
     });
+    // Voting Time Config (Example: Aaj ki date aur time set karein)
+const votingConfig = {
+    startTime: new Date("2026-04-24T08:00:00"), // Start: 24 April, 8:00 AM
+    endTime: new Date("2026-04-24T18:00:00")    // End: 24 April, 6:00 PM
+};
+
+function checkVotingStatus() {
+    const now = new Date();
+    const submitBtn = document.getElementById('submitBtn');
+    const status = document.getElementById('statusMsg');
+
+    if (now < votingConfig.startTime) {
+        submitBtn.disabled = true;
+        status.textContent = "⌛ Voting abhi shuru nahi hui hai.";
+        status.style.color = "orange";
+        return false;
+    } else if (now > votingConfig.endTime) {
+        submitBtn.disabled = true;
+        status.textContent = "🚫 Voting ka samay khatam ho chuka hai.";
+        status.style.color = "red";
+        return false;
+    } else {
+        submitBtn.disabled = false;
+        return true;
+    }
+}
+
+// Har 1 second mein check karega (Real-time update)
+setInterval(checkVotingStatus, 1000);
+
+// Page load hote hi check karein
+window.onload = checkVotingStatus;
   </script>
 </body>
 </html>
