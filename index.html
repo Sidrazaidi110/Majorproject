@@ -3,41 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Advanced Online Voting System</title>
+  <title>Secure E-Voting Portal</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root {
-      --primary: #4a90e2;
-      --secondary: #50e3c2;
-      --dark: #2c3e50;
-    }
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f2f5;
-      margin: 0; padding: 20px;
-      display: flex; flex-direction: column; align-items: center;
-    }
-    .card {
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-      width: 100%; max-width: 500px;
-      margin-bottom: 20px;
-    }
+    :root { --primary: #4a90e2; --secondary: #50e3c2; --dark: #2c3e50; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; margin-bottom: 20px; }
     h2 { color: var(--dark); text-align: center; margin-top: 0; }
     label { font-weight: bold; display: block; margin-top: 15px; color: #555; }
-    input, select {
-      width: 100%; padding: 12px; margin-top: 5px;
-      border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box;
-      font-size: 1rem;
-    }
-    button {
-      width: 100%; background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: white; border: none; padding: 15px; border-radius: 8px;
-      font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 25px;
-      transition: 0.3s;
-    }
+    input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+    button { width: 100%; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 25px; transition: 0.3s; }
     button:hover { opacity: 0.9; transform: translateY(-2px); }
     .chart-container { width: 100%; max-width: 400px; margin-top: 20px; }
     #statusMsg { text-align: center; font-weight: bold; margin-top: 10px; }
@@ -46,103 +21,102 @@
 <body>
 
   <div class="card">
-    <h2>🗳️ E-Voting Portal</h2>
+    <h2>🗳️ Secure Voting Portal</h2>
     <div id="voteForm">
-      <label>Voter Full Name</label>
-      <input type="text" id="voterName" placeholder="Enter name as per Govt ID">
+      <label for="voterName">Full Name</label>
+      <input type="text" id="voterName" placeholder="As per Govt ID" maxlength="50">
 
-      <label>Voter ID Number (EPIC)</label>
-      <input type="text" id="voterId" placeholder="Example: ABC1234567">
+      <label for="voterId">Voter ID (EPIC)</label>
+      <input type="text" id="voterId" placeholder="ABC1234567" maxlength="10">
 
-      <label>Aadhar Number</label>
-      <input type="text" id="aadhar" placeholder="12 Digit Unique ID">
+      <label for="aadhar">Aadhar Number</label>
+      <input type="password" id="aadhar" placeholder="12 Digit Unique ID" maxlength="12">
 
-      <label>Select Candidate</label>
+      <label for="candidate">Select Candidate</label>
       <select id="candidate">
         <option value="">-- Choose Party --</option>
-        <option value="BJP">BJP (Lotus)</option>
-        <option value="AAP">AAP (Broom)</option>
-        <option value="INC">INC (Hand)</option>
+        <option value="BJP">BJP</option>
+        <option value="AAP">AAP</option>
+        <option value="INC">INC</option>
       </select>
 
-      <button onclick="castVote()">Submit My Vote</button>
+      <button id="submitBtn">Submit Secure Vote</button>
       <div id="statusMsg"></div>
     </div>
   </div>
 
   <div class="card chart-container">
-    <h3 style="text-align:center">Live Vote Share</h3>
+    <h3 style="text-align:center">Live Results (Local)</h3>
     <canvas id="resultChart"></canvas>
   </div>
 
   <script>
-    // Initialize Data from LocalStorage
-    let votes = JSON.parse(localStorage.getItem('election_votes')) || { BJP: 0, AAP: 0, INC: 0 };
-    let usedIds = JSON.parse(localStorage.getItem('used_voter_ids')) || [];
+    // Data Management (Simulated Backend)
+    const store = {
+      getVotes: () => JSON.parse(localStorage.getItem('election_votes')) || { BJP: 0, AAP: 0, INC: 0 },
+      getUsedIds: () => JSON.parse(localStorage.getItem('used_voter_ids')) || [],
+      save: (votes, ids) => {
+        localStorage.setItem('election_votes', JSON.stringify(votes));
+        localStorage.setItem('used_voter_ids', JSON.stringify(ids));
+      }
+    };
 
-    // Chart Setup
+    // Chart Initialization
     const ctx = document.getElementById('resultChart').getContext('2d');
+    let votes = store.getVotes();
     let resultChart = new Chart(ctx, {
       type: 'pie',
       data: {
-        labels: ['BJP', 'AAP', 'INC'],
+        labels: Object.keys(votes),
         datasets: [{
-          data: [votes.BJP, votes.AAP, votes.INC],
+          data: Object.values(votes),
           backgroundColor: ['#ff9933', '#00a8e8', '#138808']
         }]
       }
     });
 
-    function castVote() {
+    document.getElementById('submitBtn').addEventListener('click', () => {
       const name = document.getElementById('voterName').value.trim();
       const vId = document.getElementById('voterId').value.trim().toUpperCase();
       const aadhar = document.getElementById('aadhar').value.trim();
       const party = document.getElementById('candidate').value;
+      const status = document.getElementById('statusMsg');
 
-      // Validations
+      // 1. Strict Validation & Sanitization
       if(!name || !vId || !aadhar || !party) {
-        alert("Saari details bharna zaroori hai!");
-        return;
-      }
-      if(vId.length < 10) {
-        alert("Voter ID kam se kam 10 characters ki honi chahiye.");
-        return;
-      }
-      if(aadhar.length !== 12) {
-        alert("Aadhar number 12-digit ka hona chahiye.");
+        alert("Kripya saari details bharein.");
         return;
       }
 
-      // Check if already voted
+      const aadharRegex = /^\d{12}$/;
+      if(!aadharRegex.test(aadhar)) {
+        alert("Aadhar number sirf 12 digits ka hona chahiye.");
+        return;
+      }
+
+      // 2. Duplicate Check
+      let usedIds = store.getUsedIds();
       if(usedIds.includes(vId) || usedIds.includes(aadhar)) {
-        document.getElementById('statusMsg').innerText = "❌ Error: You have already voted!";
-        document.getElementById('statusMsg').style.color = "red";
+        status.textContent = "❌ Error: Identity already used for voting!";
+        status.style.color = "red";
         return;
       }
 
-      // Update Votes
+      // 3. Process Vote
       votes[party]++;
-      usedIds.push(vId);
-      usedIds.push(aadhar);
+      usedIds.push(vId, aadhar);
+      store.save(votes, usedIds);
 
-      // Save to LocalStorage
-      localStorage.setItem('election_votes', JSON.stringify(votes));
-      localStorage.setItem('used_voter_ids', JSON.stringify(usedIds));
-
-      // Update Chart
-      resultChart.data.datasets[0].data = [votes.BJP, votes.AAP, votes.INC];
+      // 4. Update UI Securely
+      resultChart.data.datasets[0].data = Object.values(votes);
       resultChart.update();
 
-      // UI Feedback
-      document.getElementById('statusMsg').innerText = `✅ Success! Vote cast for ${party}`;
-      document.getElementById('statusMsg').style.color = "green";
-      
-      // Clear Form
-      document.getElementById('voterName').value = "";
-      document.getElementById('voterId').value = "";
-      document.getElementById('aadhar').value = "";
-      document.getElementById('candidate').value = "";
-    }
+      status.textContent = "✅ Vote registered successfully!";
+      status.style.color = "green";
+
+      // Reset Form
+      ['voterName', 'voterId', 'aadhar', 'candidate'].forEach(id => document.getElementById(id).value = "");
+    });
   </script>
 </body>
 </html>
