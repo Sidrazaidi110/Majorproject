@@ -3,245 +3,135 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Online Voting System</title>
+  <title>Smart Online Voting System v2.0</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #52868f, #99f2c8);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      color: #333; 
+    :root {
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --glass-bg: rgba(255, 255, 255, 0.95);
     }
-    h1 {
-      margin-top: 40px;
-      color: #fff;
-      font-size: 2.5em;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    body {
+      font-family: 'Poppins', 'Segoe UI', sans-serif;
+      background: var(--primary-gradient);
+      margin: 0; min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; color: #333;
     }
     .container {
-      background: #ffffff;
-      padding: 30px 40px;
-      border-radius: 16px;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.2);
-      margin-top: 30px;
-      width: 90%;
-      max-width: 550px;
-      animation: fadeIn 1s ease-in-out;
+      background: var(--glass-bg);
+      padding: 30px; border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+      margin: 20px; width: 90%; max-width: 600px;
+      animation: slideUp 0.8s ease-out;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    
+    h1 { color: #fff; text-align: center; font-size: 2.2rem; margin-top: 30px; }
+    label { font-weight: 600; display: block; margin-top: 15px; color: #555; }
+    
+    input, select {
+      width: 100%; padding: 12px; margin-top: 5px;
+      border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box;
     }
-    label {
-      display: block;
-      margin: 20px 0 8px;
-      font-weight: 600;
-      font-size: 1rem;
-    }
-    input[type="text"], select {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-      margin-bottom: 10px;
-      transition: border-color 0.3s ease;
-    }
-    input[type="text"]:focus, select:focus {
-      border-color: #4facfe;
-      outline: none;
-    }
+    
     button {
-      background: linear-gradient(to right, #4facfe, #00f2fe);
-      color: white;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: bold;
-      margin-top: 10px;
-      width: 100%;
-      transition: transform 0.2s ease;
+      background: var(--primary-gradient); color: white;
+      padding: 15px; border: none; border-radius: 10px;
+      width: 100%; margin-top: 20px; cursor: pointer;
+      font-weight: bold; font-size: 1.1rem; transition: 0.3s;
     }
-    button:hover {
-      transform: scale(1.02);
-    }
-    .results {
-      margin-top: 30px;
-    }
-    .results h3 {
-      margin-bottom: 20px;
-      font-size: 1.2em;
-      color: #333;
-    }
-    .bar-label {
-      font-size: 0.95rem;
-      margin-bottom: 6px;
-      font-weight: 500;
-    }
-    .bar {
-      height: 24px;
-      background-color: #4facfe;
-      margin-bottom: 16px;
-      border-radius: 12px;
-      transition: width 0.5s ease;
-      position: relative;
-    }
-    .bar::after {
-      content: attr(data-percent) '%';
-      position: absolute;
-      right: 10px;
-      top: 2px;
-      color: white;
-      font-size: 0.85rem;
-      font-weight: bold;
-    }
-    /* Front Page */
-    #frontPage {
-      text-align: center;
-      margin-top: 20%;
-      animation: fadeIn 1.5s ease-in-out;
-    }
-    #frontPage h1 {
-      font-size: 3em;
-    }
-    #votingPage {
-      display: none;
-      width: 100%;
-    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+
+    .chart-box { margin-top: 30px; padding: 15px; background: #fff; border-radius: 15px; }
+    #timerSection { color: #fff; text-align: center; background: rgba(0,0,0,0.2); padding: 10px 20px; border-radius: 50px; margin-bottom: 20px; }
   </style>
 </head>
 <body>
-  <!-- Front Page -->
-  <div id="frontPage">
-    <h1>🗳️ Welcome to Online Voting System</h1>
-    <p style="color:#fff; font-size:1.2em;">Your voice matters. Click below to vote.</p>
-    <button onclick="openVoting()">Enter Voting Page</button>
+
+  <h1>🗳️ Smart Voting Portal</h1>
+
+  <div id="timerSection">
+    <span id="clock"></span> | <span id="countdown" style="color: #ffeb3b;"></span>
   </div>
-  <!-- Voting Page -->
-  <div id="votingPage">
-    <h1>🗳️ Online Voting System</h1>
-    <div class="container">
-      <label for="voteId">Vote ID</label>
-      <input type="text" id="voteId" placeholder="Enter your 6-digit Vote ID" />
-      <label for="aadharNumber">Aadhar Number</label>
-      <input type="text" id="aadharNumber" placeholder="Enter your 12-digit Aadhar number" />
-      <label for="pincode">Pin Code</label>
-      <input type="text" id="pincode" placeholder="Enter your Pin Code"/>
-      <label for="voterName">Voter Name</label>
-      <input type="text" id="voterName" placeholder="Enter your name" />
-      <label for="candidate">Choose Candidate</label>
+
+  <div class="container" id="mainContainer">
+    <div id="inputForm">
+      <label>Voter Name</label>
+      <input type="text" id="voterName" placeholder="Enter Full Name">
+      
+      <label>Aadhaar Number (Redacted)</label>
+      <input type="text" id="aadharNumber" placeholder="12 Digit Number">
+      
+      <label>Choose Your Candidate</label>
       <select id="candidate">
-        <option value="">-- Select --</option>
+        <option value="">-- Click to Select --</option>
         <option value="BJP">BJP</option>
         <option value="AAP">AAP</option>
         <option value="INC">INC</option>
       </select>
-      <button onclick="submitVote()">Submit Vote</button>
-      <div class="results" id="results">
-        <h3>Live Results</h3>
-        <div class="bar-label">BJP</div>
-        <div class="bar" id="bar-BJP" style="width: 0%" data-percent="0"></div>
-        <div class="bar-label">AAP</div>
-        <div class="bar" id="bar-AAP" style="width: 0%" data-percent="0"></div>
-        <div class="bar-label">INC</div>
-        <div class="bar" id="bar-INC" style="width: 0%" data-percent="0"></div>
-      </div>
+
+      <button onclick="submitVote()">Confirm & Cast Vote</button>
+    </div>
+
+    <div class="chart-box">
+      <h3 style="text-align:center">Live Election Statistics</h3>
+      <canvas id="voteChart"></canvas>
     </div>
   </div>
-  <div id="timerSection" style="text-align:center; margin-top:20px;">
-  <h3>Voting Window</h3>
-  <p id="clock" style="font-size:1.2em; font-weight:bold;"></p>
-  <p id="countdown" style="font-size:1.2em; color:red; font-weight:bold;"></p>
-</div>
 
   <script>
-    const votes = {
-      BJP: 0,
-      AAP: 0,
-      INC: 0
-    };
-    const usedVoteIds = new Set();
-    const votedAadhars = new Set();
-    function openVoting() {
-      document.getElementById('frontPage').style.display = "none";
-      document.getElementById('votingPage').style.display = "block";
-    }
+    // Load data from LocalStorage or Start Fresh
+    let votes = JSON.parse(localStorage.getItem('votes')) || { BJP: 0, AAP: 0, INC: 0 };
+    let votedAadhars = JSON.parse(localStorage.getItem('votedAadhars')) || [];
+
+    // Initialize Chart.js
+    const ctx = document.getElementById('voteChart').getContext('2d');
+    let voteChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['BJP', 'AAP', 'INC'],
+        datasets: [{
+          data: [votes.BJP, votes.AAP, votes.INC],
+          backgroundColor: ['#ff9933', '#00a8e8', '#138808'],
+          borderWidth: 2
+        }]
+      },
+      options: { plugins: { legend: { position: 'bottom' } } }
+    });
+
     function submitVote() {
-      const voteId = document.getElementById('voteId').value.trim();
-      const aadhar = document.getElementById('aadharNumber').value.trim();
-      const pincode = document.getElementById('pincode').value.trim();
-      const name = document.getElementById('voterName').value.trim();
+      const name = document.getElementById('voterName').value;
+      const aadhar = document.getElementById('aadharNumber').value;
       const candidate = document.getElementById('candidate').value;
-      if (!voteId || !aadhar || !pincode || !name || !candidate) {
-        alert("Please fill in all fields before voting.");
-        return;
+
+      if(!name || aadhar.length < 12 || !candidate) {
+        alert("Please provide valid details!"); return;
       }
-      if (!/^\d{6}$/.test(voteId)) {
-        alert("Please enter a valid 6-digit Vote ID.");
-        return;
+
+      if(votedAadhars.includes(aadhar)) {
+        alert("Error: This ID has already cast a vote!"); return;
       }
-      if (!/^\d{12}$/.test(aadhar)) {
-        alert("Please enter a valid 12-digit Aadhar number.");
-        return;
-      }
-      if (usedVoteIds.has(voteId)) {
-        alert("This Vote ID has already been used!");
-        return;
-      }
-      if (votedAadhars.has(aadhar)) {
-        alert("This Aadhar number has already voted!");
-        return;
-      }
+
+      // Process Vote
       votes[candidate]++;
-      usedVoteIds.add(voteId);
-      votedAadhars.add(aadhar);
-      updateResults();
-      alert(`Thank you, ${name}, for voting for ${candidate}!`);
-      document.getElementById('voteId').value = '';
-      document.getElementById('aadharNumber').value = '';
-      document.getElementById('pincode').value = '';
-      document.getElementById('voterName').value = '';
-      document.getElementById('candidate').value = '';
+      votedAadhars.push(aadhar);
+
+      // Save to LocalStorage
+      localStorage.setItem('votes', JSON.stringify(votes));
+      localStorage.setItem('votedAadhars', JSON.stringify(votedAadhars));
+
+      // Update Chart
+      voteChart.data.datasets[0].data = [votes.BJP, votes.AAP, votes.INC];
+      voteChart.update();
+
+      alert(`Success! Thank you ${name}.`);
+      document.getElementById('inputForm').reset();
     }
-    function updateResults() {
-      const totalVotes = Object.values(votes).reduce((a, b) => a + b, 0);
-      for (let candidate in votes) {
-        const percent = totalVotes ? Math.round((votes[candidate] / totalVotes) * 100) : 0;
-        const bar = document.getElementById(`bar-${candidate}`);
-        bar.style.width = `${percent}%`;
-        bar.setAttribute('data-percent', percent);
-      }
+
+    // Simple Clock & Timer
+    function updateClock() {
+      document.getElementById("clock").innerText = new Date().toLocaleTimeString();
     }
-    // Set voting end time (example: 5 minutes from now)
-const votingEndTime = new Date().getTime() + (7200 * 600 * 1000);
-
-function updateClockAndCountdown() {
-  // Real-time clock
-  const now = new Date();
-  document.getElementById("clock").innerText = 
-    "Current Time: " + now.toLocaleTimeString();
-
-  // Countdown
-  const distance = votingEndTime - now.getTime();
-  if (distance > 0) {
-    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-    document.getElementById("countdown").innerText = 
-      `Time left: ${minutes}m ${seconds}s`;
-  } else {
-    document.getElementById("countdown").innerText = "Voting has ended!";
-    document.getElementById("votingPage").style.display = "none";
-  }
-}
-
-// Update every second
-setInterval(updateClockAndCountdown, 1000);
-
+    setInterval(updateClock, 1000);
   </script>
 </body>
 </html>
