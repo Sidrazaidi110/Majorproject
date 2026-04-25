@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Secure E-Voting Portal with Blockchain & Timer</title>
+  <title>Permanent Secure E-Voting Portal</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
@@ -13,24 +13,23 @@
     h2 { color: var(--dark); text-align: center; margin-top: 0; }
     label { font-weight: bold; display: block; margin-top: 15px; color: #555; }
     input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1.5px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-    .btn-group { display: flex; gap: 10px; margin-top: 25px; }
-    button { flex: 1; padding: 15px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
+    button { width: 100%; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; margin-top: 20px; }
     #submitBtn { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
-    #resetBtn { background: #e74c3c; color: white; font-size: 0.8rem; }
+    #viewLedger { background: var(--dark); color: white; font-size: 0.9rem; margin-top: 10px; }
     button:hover:not(:disabled) { opacity: 0.9; transform: translateY(-2px); }
     button:disabled { background: #ccc; cursor: not-allowed; }
     .chart-container { width: 100%; max-width: 400px; margin-top: 20px; }
-    #statusMsg { text-align: center; font-weight: bold; margin-top: 15px; min-height: 20px; }
-    .timer-box { font-family: monospace; color: #4a90e2; font-size: 1.1rem; }
+    #statusMsg { text-align: center; font-weight: bold; margin-top: 15px; }
+    .timer-box { color: #4a90e2; font-size: 1.1rem; }
   </style>
 </head>
 <body>
 
   <div class="card">
-    <h2>🗳️ Secure Voting Portal</h2>
+    <h2>🗳️ E-Voting Portal</h2>
     <div id="voteForm">
       <label for="voterName">Full Name</label>
-      <input type="text" id="voterName" placeholder="As per Govt ID" maxlength="50">
+      <input type="text" id="voterName" placeholder="Enter Full Name" maxlength="50">
 
       <label for="voterId">Voter ID (EPIC)</label>
       <input type="text" id="voterId" placeholder="ABC1234567" maxlength="10">
@@ -46,22 +45,19 @@
         <option value="INC">INC</option>
       </select>
 
-      <div class="btn-group">
-        <button id="submitBtn">Submit Secure Vote</button>
-        <button id="resetBtn" onclick="resetVotes()">Reset Testing</button>
-      </div>
+      <button id="submitBtn">Submit Secure Vote</button>
+      <button id="viewLedger" onclick="viewChain()">Verify Blockchain Ledger</button>
       
-      <div id="statusMsg">Checking voting status...</div>
+      <div id="statusMsg">Syncing with blockchain...</div>
     </div>
   </div>
 
   <div class="card chart-container">
-    <h3 style="text-align:center">Live Results (Blockchain Verified)</h3>
+    <h3 style="text-align:center">Live Results</h3>
     <canvas id="resultChart"></canvas>
   </div>
 
   <script>
-    // 1. Data & Storage Logic
     const store = {
       getVotes: () => JSON.parse(localStorage.getItem('election_votes')) || { BJP: 0, AAP: 0, INC: 0 },
       getUsedIds: () => JSON.parse(localStorage.getItem('used_voter_ids')) || [],
@@ -71,13 +67,11 @@
       }
     };
 
-    // 2. Voting Time Configuration
     const votingConfig = {
-      startTime: new Date("2026-04-25T08:00:00"), // Aaj subah 8 baje
-      endTime: new Date("2026-04-25T23:59:59")    // Aaj raat 12 baje tak
+      startTime: new Date("2026-04-25T08:00:00"),
+      endTime: new Date("2026-04-25T23:59:59")
     };
 
-    // 3. Blockchain Logic
     class Block {
       constructor(index, timestamp, voterHash, candidate, previousHash = '') {
         this.index = index;
@@ -103,21 +97,16 @@
     }
     let votingBlockchain = new Blockchain();
 
-    // 4. Chart Setup
     const ctx = document.getElementById('resultChart').getContext('2d');
     let votes = store.getVotes();
     let resultChart = new Chart(ctx, {
       type: 'pie',
       data: {
         labels: Object.keys(votes),
-        datasets: [{
-          data: Object.values(votes),
-          backgroundColor: ['#ff9933', '#00a8e8', '#138808']
-        }]
+        datasets: [{ data: Object.values(votes), backgroundColor: ['#ff9933', '#00a8e8', '#138808'] }]
       }
     });
 
-    // 5. Timer & Status Function
     function updateVotingStatus() {
       const now = new Date();
       const submitBtn = document.getElementById('submitBtn');
@@ -125,23 +114,17 @@
 
       if (now < votingConfig.startTime) {
         submitBtn.disabled = true;
-        status.textContent = `⌛ Voting starts at: ${votingConfig.startTime.toLocaleTimeString()}`;
-        status.style.color = "orange";
-      } 
-      else if (now > votingConfig.endTime) {
+        status.textContent = "⌛ Voting is currently closed.";
+      } else if (now > votingConfig.endTime) {
         submitBtn.disabled = true;
         status.textContent = "🚫 Voting has ended.";
         status.style.color = "red";
-      } 
-      else {
+      } else {
         submitBtn.disabled = false;
-        // Live Countdown Calculation
         const diff = votingConfig.endTime - now;
-        const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const h = Math.floor((diff / (1000*60*60)) % 24);
+        const m = Math.floor((diff / (1000*60)) % 60);
         const s = Math.floor((diff / 1000) % 60);
-        
-        // Show timer only if no recent success message
         if (!status.textContent.includes("✅")) {
             status.innerHTML = `<span class="timer-box">⏳ Time Left: ${h}h ${m}m ${s}s</span>`;
             status.style.color = "blue";
@@ -149,62 +132,45 @@
       }
     }
 
-    // 6. Voting Action
     document.getElementById('submitBtn').addEventListener('click', () => {
-      const name = document.getElementById('voterName').value.trim();
       const vId = document.getElementById('voterId').value.trim().toUpperCase();
       const aadhar = document.getElementById('aadhar').value.trim();
       const party = document.getElementById('candidate').value;
       const status = document.getElementById('statusMsg');
 
-      if(!name || !vId || !aadhar || !party) {
-        alert("Please fill all details!");
-        return;
-      }
-      if(!/^\d{12}$/.test(aadhar)) {
-        alert("Aadhar must be 12 digits.");
-        return;
-      }
+      if(!vId || !aadhar || !party) { alert("Fields cannot be empty."); return; }
+      if(aadhar.length !== 12) { alert("Invalid Aadhar."); return; }
 
       let usedIds = store.getUsedIds();
       if(usedIds.includes(vId) || usedIds.includes(aadhar)) {
-        status.textContent = "❌ Error: Identity already used!";
+        status.textContent = "❌ Error: ID Already Used!";
         status.style.color = "red";
         return;
       }
 
-      // Process Vote
       votes[party]++;
       usedIds.push(vId, aadhar);
       store.save(votes, usedIds);
 
-      // Update Chart
       resultChart.data.datasets[0].data = Object.values(votes);
       resultChart.update();
 
-      // Blockchain Entry
       const voterHash = CryptoJS.SHA256(vId + aadhar).toString();
       votingBlockchain.addBlock(new Block(votingBlockchain.chain.length, Date.now(), voterHash, party));
 
-      // Success Feedback
-      status.textContent = "✅ Vote registered in Blockchain!";
+      status.textContent = "✅ Vote stored in immutable ledger!";
       status.style.color = "green";
 
-      // Clear Form
       ['voterName', 'voterId', 'aadhar', 'candidate'].forEach(id => document.getElementById(id).value = "");
-      
-      // Temporary success message then back to timer after 3 seconds
       setTimeout(updateVotingStatus, 3000);
     });
 
-    function resetVotes() {
-      if(confirm("Testing ke liye reset karein?")) {
-          localStorage.clear();
-          location.reload();
-      }
+    function viewChain() {
+      console.log("--- SECURE BLOCKCHAIN LEDGER ---");
+      console.table(votingBlockchain.chain);
+      alert("Blockchain Ledger printed to Browser Console (F12) for verification.");
     }
 
-    // Run interval
     setInterval(updateVotingStatus, 1000);
     window.onload = updateVotingStatus;
   </script>
