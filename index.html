@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Secure E-Voting Portal</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Add CryptoJS for hashing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
     :root { --primary: #4a90e2; --secondary: #50e3c2; --dark: #2c3e50; }
     body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -17,8 +19,6 @@
     .chart-container { width: 100%; max-width: 400px; margin-top: 20px; }
     #statusMsg { text-align: center; font-weight: bold; margin-top: 10px; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
 </head>
 <body>
 
@@ -77,6 +77,50 @@
       }
     });
 
+    // Blockchain Classes
+    class Block {
+      constructor(index, timestamp, voterHash, candidate, previousHash = '') {
+        this.index = index;
+        this.timestamp = timestamp;
+        this.voterHash = voterHash;
+        this.candidate = candidate;
+        this.previousHash = previousHash;
+        this.hash = this.calculateHash();
+      }
+      calculateHash() {
+        return CryptoJS.SHA256(this.index + this.timestamp + this.voterHash + this.candidate + this.previousHash).toString();
+      }
+    }
+
+    class Blockchain {
+      constructor() {
+        this.chain = [this.createGenesisBlock()];
+      }
+      createGenesisBlock() {
+        return new Block(0, Date.now(), "Genesis", "None", "0");
+      }
+      getLatestBlock() {
+        return this.chain[this.chain.length - 1];
+      }
+      addBlock(newBlock) {
+        newBlock.previousHash = this.getLatestBlock().hash;
+        newBlock.hash = newBlock.calculateHash();
+        this.chain.push(newBlock);
+      }
+      isChainValid() {
+        for (let i = 1; i < this.chain.length; i++) {
+          const current = this.chain[i];
+          const previous = this.chain[i - 1];
+          if (current.hash !== current.calculateHash()) return false;
+          if (current.previousHash !== previous.hash) return false;
+        }
+        return true;
+      }
+    }
+
+    let votingBlockchain = new Blockchain();
+
+    // Voting Logic
     document.getElementById('submitBtn').addEventListener('click', () => {
       const name = document.getElementById('voterName').value.trim();
       const vId = document.getElementById('voterId').value.trim().toUpperCase();
@@ -84,19 +128,16 @@
       const party = document.getElementById('candidate').value;
       const status = document.getElementById('statusMsg');
 
-      // 1. Strict Validation & Sanitization
       if(!name || !vId || !aadhar || !party) {
         alert("Kripya saari details bharein.");
         return;
       }
-
       const aadharRegex = /^\d{12}$/;
       if(!aadharRegex.test(aadhar)) {
         alert("Aadhar number sirf 12 digits ka hona chahiye.");
         return;
       }
 
-      // 2. Duplicate Check
       let usedIds = store.getUsedIds();
       if(usedIds.includes(vId) || usedIds.includes(aadhar)) {
         status.textContent = "❌ Error: Identity already used for voting!";
@@ -104,109 +145,55 @@
         return;
       }
 
-      // 3. Process Vote
       votes[party]++;
       usedIds.push(vId, aadhar);
       store.save(votes, usedIds);
 
-      // 4. Update UI Securely
       resultChart.data.datasets[0].data = Object.values(votes);
       resultChart.update();
 
       status.textContent = "✅ Vote registered successfully!";
       status.style.color = "green";
+
       // Blockchain mein vote add karo
-const voterHash = CryptoJS.SHA256(vId + aadhar).toString();
-const newBlock = new Block(votingBlockchain.chain.length, Date.now(), voterHash, party);
-votingBlockchain.addBlock(newBlock);
-console.log("Blockchain Ledger:", votingBlockchain);
+      const voterHash = CryptoJS.SHA256(vId + aadhar).toString();
+      const newBlock = new Block(votingBlockchain.chain.length, Date.now(), voterHash, party);
+      votingBlockchain.addBlock(newBlock);
+      console.log("Blockchain Ledger:", votingBlockchain);
 
-
-      // Reset Form
       ['voterName', 'voterId', 'aadhar', 'candidate'].forEach(id => document.getElementById(id).value = "");
     });
-    // Voting Time Config (Example: Aaj ki date aur time set karein)
-   
-const votingConfig = {
-    startTime: new Date("2026-04-25T20:40:00"), // Start: abhi ke aas paas
-    endTime: new Date("2026-04-25T23:59:00")    // End: raat tak
-};
 
+    // Voting Time Config
+    const votingConfig = {
+      startTime: new Date("2026-04-25T20:40:00"),
+      endTime: new Date("2026-04-25T23:59:00")
+    };
 
-function checkVotingStatus() {
-    const now = new Date();
-    const submitBtn = document.getElementById('submitBtn');
-    const status = document.getElementById('statusMsg');
+    function checkVotingStatus() {
+      const now = new Date();
+      const submitBtn = document.getElementById('submitBtn');
+      const status = document.getElementById('statusMsg');
 
-    if (now < votingConfig.startTime) {
+      if (now < votingConfig.startTime) {
         submitBtn.disabled = true;
         status.textContent = "⌛ Voting abhi shuru nahi hui hai.";
         status.style.color = "orange";
         return false;
-    } else if (now > votingConfig.endTime) {
+      } 
+      else if (now > votingConfig.endTime) {
         submitBtn.disabled = true;
         status.textContent = "🚫 Voting ka samay khatam ho chuka hai.";
         status.style.color = "red";
         return false;
-    } else {
+      } else {
         submitBtn.disabled = false;
         return true;
+      }
     }
-}
 
-// Har 1 second mein check karega (Real-time update)
-setInterval(checkVotingStatus, 1000);
-
-// Page load hote hi check karein
-window.onload = checkVotingStatus;
-class Block {
-  constructor(index, timestamp, voterHash, candidate, previousHash = '') {
-    this.index = index;
-    this.timestamp = timestamp;
-    this.voterHash = voterHash;
-    this.candidate = candidate;
-    this.previousHash = previousHash;
-    this.hash = this.calculateHash();
-  }
-
-  calculateHash() {
-    return CryptoJS.SHA256(this.index + this.timestamp + this.voterHash + this.candidate + this.previousHash).toString();
-  }
-}
-
-class Blockchain {
-  constructor() {
-    this.chain = [this.createGenesisBlock()];
-  }
-
-  createGenesisBlock() {
-    return new Block(0, Date.now(), "Genesis", "None", "0");
-  }
-
-  getLatestBlock() {
-    return this.chain[this.chain.length - 1];
-  }
-
-  addBlock(newBlock) {
-    newBlock.previousHash = this.getLatestBlock().hash;
-    newBlock.hash = newBlock.calculateHash();
-    this.chain.push(newBlock);
-  }
-
-  isChainValid() {
-    for (let i = 1; i < this.chain.length; i++) {
-      const current = this.chain[i];
-      const previous = this.chain[i - 1];
-      if (current.hash !== current.calculateHash()) return false;
-      if (current.previousHash !== previous.hash) return false;
-    }
-    return true;
-  }
-}
-
-// Blockchain object create karo
-let votingBlockchain = new Blockchain();
-
+    setInterval(checkVotingStatus, 1000);
+    window.onload = checkVotingStatus;
   </script>
 </body>
 </html>
