@@ -43,6 +43,7 @@
       </select>
 
       <button id="submitBtn">Submit Secure Vote</button>
+      <button onclick="resetVotes()">Reset All Votes</button>
       <div id="statusMsg"></div>
     </div>
   </div>
@@ -164,6 +165,17 @@
       ['voterName', 'voterId', 'aadhar', 'candidate'].forEach(id => document.getElementById(id).value = "");
     });
 
+    // Reset Votes Function
+    function resetVotes() {
+      const resetData = { BJP: 0, AAP: 0, INC: 0 };
+      localStorage.setItem('election_votes', JSON.stringify(resetData));
+      localStorage.setItem('used_voter_ids', JSON.stringify([]));
+      votes = resetData;
+      resultChart.data.datasets[0].data = Object.values(votes);
+      resultChart.update();
+      alert("✅ All votes reset to 0");
+    }
+
     // Voting Time Config
     const votingConfig = {
       startTime: new Date("2026-04-25T20:40:00"),
@@ -175,7 +187,7 @@
       const submitBtn = document.getElementById('submitBtn');
       const status = document.getElementById('statusMsg');
 
-      if (now < votingConfig.startTime) {
+      if (now < votingConfig.startTime){
         submitBtn.disabled = true;
         status.textContent = "⌛ Voting abhi shuru nahi hui hai.";
         status.style.color = "orange";
